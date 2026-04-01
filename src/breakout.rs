@@ -135,7 +135,10 @@ impl BreakoutGame {
                         "text",
                         format!("#breakout_aux2 で{}点を獲得した！", self.score),
                     ),
-                    ("url", "https://github.com/sevenc-nanashi/breakout.aux2".to_string()),
+                    (
+                        "url",
+                        "https://github.com/sevenc-nanashi/breakout.aux2".to_string(),
+                    ),
                 ],
             )?;
             open::that(url.as_str())?;
@@ -167,6 +170,8 @@ impl BreakoutGame {
                 edit.objects_in_layer(self.ball_layer as _)
                     .find(|(position, _handle)| {
                         (position.start..=position.end).contains(&(self.ball_x_frame as _))
+                            || (position.start..=position.end)
+                                .contains(&((self.ball_x_frame + UNIT_SIZE as i64 - 1) as _))
                     });
             if let Some((position, handle)) = hit_object {
                 tracing::info!(

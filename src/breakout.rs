@@ -35,6 +35,7 @@ struct BreakoutGame {
     bar_object: aviutl2::generic::ObjectHandle,
     bar_x_frame: i64,
     bar_max_frame: u64,
+    score: usize,
 }
 
 const UNICODE_BRAILLE_SPACE: char = '\u{2800}';
@@ -55,8 +56,15 @@ impl BreakoutGame {
             info.layer_max
         );
         let ball_layer = (info.layer_max as u64 + PADDING_AREA) as i64;
+        let bar_layer = (info.layer_max as u64 + PADDING_AREA + 1) as i64;
         let ball_x_frame = (info.frame as i64) - (UNIT_SIZE as i64) / 2;
         let bar_x_frame = (info.frame as i64) - (BAR_WIDTH as i64) / 2;
+        EDIT_HANDLE.call_edit_section(|edit| {
+            edit.set_display_layer_frame(
+                (bar_layer - (info.display_layer_num as i64) + 1).max(0) as _,
+                (bar_x_frame - (info.display_frame_num as i64) / 2).max(0) as _,
+            )
+        })??;
         let (ball, bar) = EDIT_HANDLE.call_edit_section(|edit| {
             let ball = edit.create_object(
                 "テキスト",
@@ -71,8 +79,8 @@ impl BreakoutGame {
                 "テキスト",
                 &UNICODE_BRAILLE_SPACE.to_string(),
             )?;
+            edit.set_object_effect_item(&ball, "テキスト", 0, "サイズ", "1.0")?;
 
-            let bar_layer = (info.layer_max as u64 + PADDING_AREA + 1) as i64;
             let bar = edit.create_object(
                 "テキスト",
                 bar_layer as _,
@@ -84,12 +92,9 @@ impl BreakoutGame {
                 "テキスト",
                 0,
                 "テキスト",
-                &UNICODE_BRAILLE_SPACE.to_string().repeat(5),
+                &UNICODE_BRAILLE_SPACE.to_string(),
             )?;
-            edit.set_display_layer_frame(
-                (bar_layer - (info.display_layer_num as i64) + 1).max(0) as _,
-                (bar_x_frame - (info.display_frame_num as i64) / 2).max(0) as _,
-            )?;
+            edit.set_object_effect_item(&bar, "テキスト", 0, "サイズ", "1.0")?;
             anyhow::Ok((ball, bar))
         })??;
         Ok(Self {
@@ -103,6 +108,7 @@ impl BreakoutGame {
             bar_object: bar,
             bar_x_frame,
             bar_max_frame: info.frame_max as u64 - (UNIT_SIZE * 5),
+            score: 0,
         })
     }
 
@@ -121,7 +127,18 @@ impl BreakoutGame {
             self.velocity_y = -self.velocity_y;
             self.ball_layer = 1;
         }
-        if self.ball_layer >= self.bar_layer as i64 {
+        if self.ball_layer > self.bar_layer as i64 {
+            let url = url::Url::parse_with_params(
+                "https://twitter.com/intent/tweet",
+                &[
+                    (
+                        "text",
+                        format!("#breakout_aux2 で{}点を獲得した！", self.score),
+                    ),
+                    ("url", "https://github.com/sevenc-nanashi/breakout.aux2".to_string()),
+                ],
+            )?;
+            open::that(url.as_str())?;
             anyhow::bail!("ゲームオーバー");
         }
         self.ball_layer += self.velocity_y;
@@ -144,6 +161,7 @@ impl BreakoutGame {
             {
                 self.velocity_y = -self.velocity_y;
                 self.ball_layer -= 2;
+                self.score += 1;
             }
             let hit_object =
                 edit.objects_in_layer(self.ball_layer as _)
@@ -160,6 +178,7 @@ impl BreakoutGame {
                 self.velocity_y = -self.velocity_y;
                 self.ball_layer += self.velocity_y;
                 edit.delete_object(&handle)?;
+                self.score += 10;
             }
             edit.move_object(
                 &self.ball_object,

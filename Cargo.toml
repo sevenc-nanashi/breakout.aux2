@@ -1,0 +1,13 @@
+[package]
+name = "breakout-aux2"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+name = "breakout_aux2"
+crate-type = ["cdylib"]
+
+[dependencies]
+anyhow = "1.0.102"
+aviutl2 = "0.22.0"
+tracing = "0.1.44"

@@ -37,7 +37,7 @@ struct BreakoutGame {
     bar_max_frame: u64,
 }
 
-const UNICODE_BLOCK: char = '\u{2588}';
+const UNICODE_BRAILLE_SPACE: char = '\u{2800}';
 const PADDING_AREA: u64 = 4;
 
 const UNIT_SIZE: u64 = 5;
@@ -55,8 +55,8 @@ impl BreakoutGame {
             info.layer_max
         );
         let ball_layer = (info.layer_max as u64 + PADDING_AREA) as i64;
-        let ball_x_frame = (info.frame_max as i64) / 2;
-        let bar_x_frame = (info.frame_max as i64) / 2 - (BAR_WIDTH as i64) / 2;
+        let ball_x_frame = (info.frame as i64) - (UNIT_SIZE as i64) / 2;
+        let bar_x_frame = (info.frame as i64) - (BAR_WIDTH as i64) / 2;
         let (ball, bar) = EDIT_HANDLE.call_edit_section(|edit| {
             let ball = edit.create_object(
                 "テキスト",
@@ -69,12 +69,13 @@ impl BreakoutGame {
                 "テキスト",
                 0,
                 "テキスト",
-                &UNICODE_BLOCK.to_string(),
+                &UNICODE_BRAILLE_SPACE.to_string(),
             )?;
 
+            let bar_layer = (info.layer_max as u64 + PADDING_AREA + 1) as i64;
             let bar = edit.create_object(
                 "テキスト",
-                (info.layer_max as u64 + PADDING_AREA + 1) as _,
+                bar_layer as _,
                 bar_x_frame as _,
                 Some(BAR_WIDTH as _),
             )?;
@@ -83,7 +84,11 @@ impl BreakoutGame {
                 "テキスト",
                 0,
                 "テキスト",
-                &UNICODE_BLOCK.to_string().repeat(5),
+                &UNICODE_BRAILLE_SPACE.to_string().repeat(5),
+            )?;
+            edit.set_display_layer_frame(
+                (bar_layer - (info.display_layer_num as i64) + 1).max(0) as _,
+                (bar_x_frame - (info.display_frame_num as i64) / 2).max(0) as _,
             )?;
             anyhow::Ok((ball, bar))
         })??;
@@ -102,6 +107,9 @@ impl BreakoutGame {
     }
 
     pub fn update(&mut self) -> anyhow::Result<()> {
+        let info = EDIT_HANDLE.get_edit_info();
+        self.max_frame = info.frame_max as u64 - UNIT_SIZE;
+        self.bar_max_frame = info.frame_max as u64 - BAR_WIDTH;
         let mut ball_x_frame = self.ball_x_frame + self.velocity_x;
 
         if ball_x_frame < 0 || ball_x_frame >= self.max_frame as i64 {

@@ -149,7 +149,7 @@ impl BreakoutGame {
         EDIT_HANDLE.call_edit_section(|edit| {
             let target_bar_x = edit.info.frame as i64 - BAR_WIDTH as i64 / 2;
             self.bar_x_frame = target_bar_x.clamp(0, self.bar_max_frame as i64);
-            edit.move_object(&self.bar_object, self.bar_layer as _, self.bar_x_frame as _)?;
+            let _ = edit.move_object(&self.bar_object, self.bar_layer as _, self.bar_x_frame as _);
 
             tracing::info!(
                 "ball_x_frame: {}, ball_layer: {}",
@@ -185,11 +185,11 @@ impl BreakoutGame {
                 edit.delete_object(&handle)?;
                 self.score += 10;
             }
-            edit.move_object(
+            let _ = edit.move_object(
                 &self.ball_object,
                 self.ball_layer as _,
                 self.ball_x_frame as _,
-            )?;
+            );
 
             anyhow::Ok(())
         })??;
